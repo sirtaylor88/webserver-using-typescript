@@ -11,7 +11,7 @@ export function middlewareLogResponses(req: Request, res: Response, next: NextFu
     next();
 }
 
-export function middlewareMetricsInc(_: Request, __: Response, next: NextFunction) {
+export function middlewareMetricsInc(_: Request, __: Response, next: NextFunction): void {
     config.fileserverHits++;
     next();
 }
