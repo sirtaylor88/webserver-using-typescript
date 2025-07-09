@@ -30,3 +30,58 @@ export async function handlerReset(_: Request, res: Response): Promise<void> {
     res.write('Hits reset to 0');
     res.end();
 }
+
+type requesteData = {
+    body: string;
+};
+
+const dataIsValid = (data: object): data is requesteData =>
+   'body' in data && typeof data.body === 'string';
+
+
+function jsonResponse(res: Response, payload: object, code: number = 200) {
+    res.header('Content-Type', 'application/json');
+    const body = JSON.stringify(payload);
+    res.status(code).send(body);
+    res.end();
+}
+
+function respondWithError(res: Response, message: string = 'Something went wrong', code: number = 400): void  {
+    const payload = {
+        error: message
+    }
+    jsonResponse(res, payload, code);
+}
+
+export async function handlerValidate(req: Request, res: Response): Promise<void>  {
+    let body = ''; // 1. Initialize
+
+    // 2. Listen for data events
+    req.on('data', (chunk) => {
+        body += chunk;
+    });
+
+    // 3. Listen for end events
+    req.on('end', () => {
+        try {
+            const parsedBody = JSON.parse(body);
+            if (!dataIsValid(parsedBody)) {
+                respondWithError(res);
+                return;
+            }
+
+            if (parsedBody.body.length > 140) {
+                respondWithError(res, 'Chirp is too long');
+                return;
+            }
+
+            const payload = {
+                valid: true
+            };
+            jsonResponse(res, payload);
+
+        } catch (error) {
+            respondWithError(res, `Invalid JSON: ${error}`);
+        }
+    });
+}
