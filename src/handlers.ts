@@ -75,8 +75,14 @@ export async function handlerValidate(req: Request, res: Response): Promise<void
                 return;
             }
 
+            const words = parsedBody.body.split(' ');
+            for (const [idx, word] of words.entries()) {
+                if (['kerfuffle', 'sharbert', 'fornax'].includes(word.toLowerCase())) {
+                    words[idx] = '****';
+                }
+            }
             const payload = {
-                valid: true
+                cleanedBody: words.join(' ')
             };
             jsonResponse(res, payload);
 
