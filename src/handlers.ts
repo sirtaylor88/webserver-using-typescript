@@ -46,7 +46,7 @@ function jsonResponse(res: Response, payload: object, code: number = 200) {
     res.end();
 }
 
-function respondWithError(res: Response, message: string = 'Something went wrong', code: number = 400): void  {
+export function respondWithError(res: Response, message: string = 'Something went wrong', code: number = 400): void  {
     const payload = {
         error: message
     }
@@ -54,40 +54,25 @@ function respondWithError(res: Response, message: string = 'Something went wrong
 }
 
 export async function handlerValidate(req: Request, res: Response): Promise<void>  {
-    let body = ''; // 1. Initialize
+    const parsedBody = JSON.parse(req.body);
+    if (!dataIsValid(parsedBody)) {
+        respondWithError(res);
+        return;
+    }
 
-    // 2. Listen for data events
-    req.on('data', (chunk) => {
-        body += chunk;
-    });
+    if (parsedBody.body.length > 140) {
+        throw new Error('Chirp is too long');
+    }
 
-    // 3. Listen for end events
-    req.on('end', () => {
-        try {
-            const parsedBody = JSON.parse(body);
-            if (!dataIsValid(parsedBody)) {
-                respondWithError(res);
-                return;
-            }
-
-            if (parsedBody.body.length > 140) {
-                respondWithError(res, 'Chirp is too long');
-                return;
-            }
-
-            const words = parsedBody.body.split(' ');
-            for (const [idx, word] of words.entries()) {
-                if (['kerfuffle', 'sharbert', 'fornax'].includes(word.toLowerCase())) {
-                    words[idx] = '****';
-                }
-            }
-            const payload = {
-                cleanedBody: words.join(' ')
-            };
-            jsonResponse(res, payload);
-
-        } catch (error) {
-            respondWithError(res, `Invalid JSON: ${error}`);
+    const words = parsedBody.body.split(' ');
+    for (const [idx, word] of words.entries()) {
+        if (['kerfuffle', 'sharbert', 'fornax'].includes(word.toLowerCase())) {
+            words[idx] = '****';
         }
-    });
+    }
+    const payload = {
+        cleanedBody: words.join(' ')
+    };
+    jsonResponse(res, payload);
+
 }
