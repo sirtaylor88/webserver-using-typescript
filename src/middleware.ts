@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { config } from './config.js';
 import { respondWithError } from './handlers.js';
+import { customErrors } from './errors.js';
 
 export function middlewareLogResponses(req: Request, res: Response, next: NextFunction): void {
     res.on('finish', () => {
@@ -17,12 +18,12 @@ export function middlewareMetricsInc(_: Request, __: Response, next: NextFunctio
     next();
 }
 
-export function errorHandler(
-  err: Error,
-  _: Request,
-  res: Response,
-  __: NextFunction,
-) {
-    console.log(err.message);
+export function middlewareError(err: Error, _: Request, res: Response,__: NextFunction): void {
+    for (const error of customErrors) {
+        if (err instanceof error) {
+            respondWithError(res, err.message, err.code);
+            return;
+        }
+    }
     respondWithError(res, 'Something went wrong on our end', 500);
 }

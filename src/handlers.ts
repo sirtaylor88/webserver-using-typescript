@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { config } from './config.js';
+import { BadRequestError } from './errors.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -31,12 +32,6 @@ export async function handlerReset(_: Request, res: Response): Promise<void> {
     res.end();
 }
 
-type requesteData = {
-    body: string;
-};
-
-const dataIsValid = (data: object): data is requesteData =>
-   'body' in data && typeof data.body === 'string';
 
 
 function jsonResponse(res: Response, payload: object, code: number = 200) {
@@ -46,25 +41,26 @@ function jsonResponse(res: Response, payload: object, code: number = 200) {
     res.end();
 }
 
-export function respondWithError(res: Response, message: string = 'Something went wrong', code: number = 400): void  {
+export function respondWithError(res: Response, message: string = 'Something went wrong', code: number = 500): void  {
     const payload = {
         error: message
     }
     jsonResponse(res, payload, code);
 }
 
+type requesteBody = {
+    body: string;
+};
+const bodyMaxLength = 140;
+
 export async function handlerValidate(req: Request, res: Response): Promise<void>  {
-    const parsedBody = JSON.parse(req.body);
-    if (!dataIsValid(parsedBody)) {
-        respondWithError(res);
-        return;
+    const params: requesteBody = req.body;
+
+    if (params.body.length > bodyMaxLength) {
+        throw new BadRequestError(`Chirp is too long. Max length is ${bodyMaxLength}`);
     }
 
-    if (parsedBody.body.length > 140) {
-        throw new Error('Chirp is too long');
-    }
-
-    const words = parsedBody.body.split(' ');
+    const words = params.body.split(' ');
     for (const [idx, word] of words.entries()) {
         if (['kerfuffle', 'sharbert', 'fornax'].includes(word.toLowerCase())) {
             words[idx] = '****';
