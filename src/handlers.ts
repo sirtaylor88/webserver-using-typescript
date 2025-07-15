@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { config } from './config.js';
-import { BadRequestError } from './errors.js';
+import { BadRequestError, ForbiddenError } from './errors.js';
+import { createUser, deleteUsers } from './db/queries/users.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -28,11 +29,13 @@ export async function handlerMetrics(_: Request, res: Response): Promise<void> {
 
 export async function handlerReset(_: Request, res: Response): Promise<void> {
     config.fileserverHits = 0;
+    if (config.platform !== 'dev') {
+        throw new ForbiddenError(`You should not reset the database on prod.`);
+    }
+    await deleteUsers();
     res.write('Hits reset to 0');
     res.end();
 }
-
-
 
 function jsonResponse(res: Response, payload: object, code: number = 200) {
     res.header('Content-Type', 'application/json');
@@ -48,12 +51,12 @@ export function respondWithError(res: Response, message: string = 'Something wen
     jsonResponse(res, payload, code);
 }
 
-type requesteBody = {
-    body: string;
-};
-const bodyMaxLength = 140;
-
 export async function handlerValidate(req: Request, res: Response): Promise<void>  {
+    const bodyMaxLength = 140;
+    type requesteBody = {
+        body: string;
+    };
+
     const params: requesteBody = req.body;
 
     if (params.body.length > bodyMaxLength) {
@@ -70,5 +73,15 @@ export async function handlerValidate(req: Request, res: Response): Promise<void
         cleanedBody: words.join(' ')
     };
     jsonResponse(res, payload);
+}
 
+export async function handlerCreateUser(req: Request, res: Response): Promise<void> {
+    type requesteBody = {
+        email: string;
+    };
+
+    const params: requesteBody = req.body;
+    console.log(params);
+    const newUser = await createUser(params);
+    jsonResponse(res, newUser, 201);
 }
