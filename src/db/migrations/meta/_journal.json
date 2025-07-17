@@ -8,6 +8,13 @@
       "when": 1752359465493,
       "tag": "0000_military_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752776361583,
+      "tag": "0001_luxuriant_blockbuster",
+      "breakpoints": true
     }
   ]
 }
