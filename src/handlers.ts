@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { config } from './config.js';
 import { BadRequestError, ForbiddenError } from './errors.js';
 import { createUser, deleteUsers } from './db/queries/users.js';
-import { createChirp } from './db/queries/chirps.js';
+import { createChirp, getChirps } from './db/queries/chirps.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -88,4 +88,9 @@ export async function handlerCreateChirp(req: Request, res: Response): Promise<v
 
     const newChirp = await createChirp(payload);
     jsonResponse(res, newChirp, 201);
+}
+
+export async function handlerGetChirps(req: Request, res: Response): Promise<void> {
+    const chirps = await getChirps();
+    jsonResponse(res, chirps, 200);
 }

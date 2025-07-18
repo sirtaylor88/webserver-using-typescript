@@ -1,5 +1,5 @@
 import { db } from "../index.js";
-import { chirps, NewChirp } from "../schema.js";
+import { Chirp, chirps, NewChirp } from "../schema.js";
 
 export async function createChirp(chirp: NewChirp): Promise<NewChirp> {
     const [result] = await db
@@ -8,4 +8,9 @@ export async function createChirp(chirp: NewChirp): Promise<NewChirp> {
         .onConflictDoNothing()
         .returning();
     return result;
+}
+
+export async function getChirps(): Promise<Chirp[]> {
+    const results = await db.select().from(chirps).orderBy(chirps.createdAt);
+    return results;
 }

@@ -1,5 +1,5 @@
 import express from 'express';
-import { handlerReadiness, handlerMetrics, handlerReset, handlerCreateUser, handlerCreateChirp } from './handlers.js';
+import { handlerReadiness, handlerMetrics, handlerReset, handlerCreateUser, handlerCreateChirp, handlerGetChirps } from './handlers.js';
 import { middlewareError, middlewareLogResponses, middlewareMetricsInc } from './middleware.js';
 
 import postgres from "postgres";
@@ -34,6 +34,9 @@ app.post('/admin/reset', (req, res, next) => {
 });
 app.post('/api/users', (req, res, next) => {
     Promise.resolve(handlerCreateUser(req, res)).catch(next);
+})
+app.get('/api/chirps', (req, res, next) => {
+    Promise.resolve(handlerGetChirps(req, res)).catch(next);
 })
 app.post('/api/chirps', (req, res, next) => {
     Promise.resolve(handlerCreateChirp(req, res)).catch(next);
