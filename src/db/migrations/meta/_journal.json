@@ -15,6 +15,13 @@
       "when": 1752776361583,
       "tag": "0001_luxuriant_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752906273203,
+      "tag": "0002_mixed_earthquake",
+      "breakpoints": true
     }
   ]
 }

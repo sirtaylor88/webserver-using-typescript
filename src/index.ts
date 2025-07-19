@@ -6,7 +6,8 @@ import {
     handlerCreateUser,
     handlerCreateChirp,
     handlerGetChirps,
-    handlerGetChirp
+    handlerGetChirp,
+    handlerLogin
 } from './handlers.js';
 import { middlewareError, middlewareLogResponses, middlewareMetricsInc } from './middleware.js';
 
@@ -40,6 +41,9 @@ app.get('/admin/metrics', (req, res, next) => {
 app.post('/admin/reset', (req, res, next) => {
     Promise.resolve(handlerReset(req, res)).catch(next);
 });
+app.post('/api/login', (req, res, next) => {
+    Promise.resolve(handlerLogin(req, res)).catch(next);
+})
 app.post('/api/users', (req, res, next) => {
     Promise.resolve(handlerCreateUser(req, res)).catch(next);
 })

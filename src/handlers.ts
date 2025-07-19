@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express';
 import { config } from './config.js';
-import { BadRequestError, ForbiddenError } from './errors.js';
-import { createUser, deleteUsers } from './db/queries/users.js';
+import { BadRequestError, ForbiddenError, UnauthorizedError } from './errors.js';
+import { createUser, deleteUsers, getuser } from './db/queries/users.js';
 import { createChirp, getChirp, getChirps } from './db/queries/chirps.js';
+import { checkPasswordHash, hashPassword } from './auth.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -55,11 +56,39 @@ export function respondWithError(res: Response, message: string = 'Something wen
 export async function handlerCreateUser(req: Request, res: Response): Promise<void> {
     type requesteBody = {
         email: string;
+        password: string;
     };
 
     const params: requesteBody = req.body;
-    const newUser = await createUser(params);
+    const payload = {
+        email: params.email,
+        hashPassword: await hashPassword(params.password)
+    }
+    const newUser = await createUser(payload);
     jsonResponse(res, newUser, 201);
+}
+
+export async function handlerLogin(req: Request, res: Response): Promise<void> {
+    type requesteBody = {
+        email: string;
+        password: string;
+    };
+
+    const params: requesteBody = req.body;
+    const user = await getuser(params.email);
+    if (user === undefined) {
+        throw new UnauthorizedError('User with this email does not exist!');
+    }
+    console.log(params.password);
+    console.log(user.hashedPassword)
+
+    const valid = await checkPasswordHash(params.password, user.hashedPassword)
+    if (!valid) {
+        throw new UnauthorizedError('Wrong password!');
+    };
+    const {hashedPassword, ...payload} = user;
+
+    jsonResponse(res, payload, 200);
 }
 
 export async function handlerCreateChirp(req: Request, res: Response): Promise<void> {
