@@ -4,6 +4,7 @@ import { BadRequestError, ForbiddenError, UnauthorizedError } from './errors.js'
 import { createUser, deleteUsers, getuser } from './db/queries/users.js';
 import { createChirp, getChirp, getChirps } from './db/queries/chirps.js';
 import { checkPasswordHash, hashPassword } from './auth.js';
+import { UserResponse } from './db/schema.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -62,10 +63,11 @@ export async function handlerCreateUser(req: Request, res: Response): Promise<vo
     const params: requesteBody = req.body;
     const payload = {
         email: params.email,
-        hashPassword: await hashPassword(params.password)
+        hashedPassword: await hashPassword(params.password)
     }
     const newUser = await createUser(payload);
-    jsonResponse(res, newUser, 201);
+
+    jsonResponse(res, newUser satisfies UserResponse, 201);
 }
 
 export async function handlerLogin(req: Request, res: Response): Promise<void> {
@@ -79,8 +81,6 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
     if (user === undefined) {
         throw new UnauthorizedError('User with this email does not exist!');
     }
-    console.log(params.password);
-    console.log(user.hashedPassword)
 
     const valid = await checkPasswordHash(params.password, user.hashedPassword)
     if (!valid) {
@@ -88,7 +88,7 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
     };
     const {hashedPassword, ...payload} = user;
 
-    jsonResponse(res, payload, 200);
+    jsonResponse(res, payload satisfies UserResponse, 200);
 }
 
 export async function handlerCreateChirp(req: Request, res: Response): Promise<void> {

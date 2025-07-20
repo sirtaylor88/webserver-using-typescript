@@ -8,7 +8,8 @@ export async function createUser(user: NewUser): Promise<UserResponse> {
         .values(user)
         .onConflictDoNothing()
         .returning();
-    return result;
+    const {hashedPassword, ...userResponse} = result;
+    return userResponse;
 }
 
 export async function deleteUsers(): Promise<void> {
