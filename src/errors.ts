@@ -1,5 +1,5 @@
 export class BadRequestError extends Error {
-    public code
+    readonly code
     constructor(message: string) {
         super(message);
         this.code = 400;
@@ -7,7 +7,7 @@ export class BadRequestError extends Error {
 }
 
 export class UnauthorizedError extends Error {
-    public code
+    readonly code
     constructor(message: string) {
         super(message);
         this.code = 401;
@@ -15,7 +15,7 @@ export class UnauthorizedError extends Error {
 }
 
 export class ForbiddenError extends Error {
-    public code
+    readonly code
     constructor(message: string) {
         super(message);
         this.code = 403;
@@ -23,7 +23,7 @@ export class ForbiddenError extends Error {
 }
 
 export class NotFoundError extends Error {
-    public code
+    readonly code
     constructor(message: string) {
         super(message);
         this.code = 404;
