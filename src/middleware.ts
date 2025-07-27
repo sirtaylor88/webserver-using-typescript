@@ -25,5 +25,6 @@ export function middlewareError(err: Error, _: Request, res: Response,__: NextFu
             return;
         }
     }
+    console.log(err);
     respondWithError(res, 'Something went wrong on our end', 500);
 }

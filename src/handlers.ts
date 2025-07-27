@@ -3,7 +3,7 @@ import { config } from './config.js';
 import { BadRequestError, ForbiddenError, UnauthorizedError } from './errors.js';
 import { createUser, deleteUsers, getuser } from './db/queries/users.js';
 import { createChirp, getChirp, getChirps } from './db/queries/chirps.js';
-import { checkPasswordHash, hashPassword } from './auth.js';
+import { checkPasswordHash, getBearerToken, hashPassword, makeJWT, validateJWT } from './auth.js';
 import { UserResponse } from './db/schema.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
@@ -74,6 +74,7 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
     type requesteBody = {
         email: string;
         password: string;
+        expiresInSeconds?: number;
     };
 
     const params: requesteBody = req.body;
@@ -86,16 +87,23 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
     if (!valid) {
         throw new UnauthorizedError('Wrong password!');
     };
-    const {hashedPassword, ...payload} = user;
+    const {hashedPassword, ...userPayload} = user;
+    const expirationTime =  params.expiresInSeconds || 3600;
+    const payload = {
+        ...userPayload,
+        token: makeJWT(user.id, expirationTime, config.jwtSecret)
+    }
 
     jsonResponse(res, payload satisfies UserResponse, 200);
 }
 
 export async function handlerCreateChirp(req: Request, res: Response): Promise<void> {
+    const token = getBearerToken(req);
+    const userID = validateJWT(token, config.jwtSecret);
+
     const bodyMaxLength = 140;
     type requesteBody = {
         body: string;
-        userId: string;
     };
 
     const params: requesteBody = req.body;
@@ -112,7 +120,7 @@ export async function handlerCreateChirp(req: Request, res: Response): Promise<v
     }
     const payload = {
         body: words.join(' '),
-        userId: params.userId
+        userId: userID
     };
 
     const newChirp = await createChirp(payload);
