@@ -7,7 +7,9 @@ import {
     handlerCreateChirp,
     handlerGetChirps,
     handlerGetChirp,
-    handlerLogin
+    handlerLogin,
+    handlerRefresh,
+    handlerRevoke
 } from './handlers.js';
 import { middlewareError, middlewareLogResponses, middlewareMetricsInc } from './middleware.js';
 
@@ -55,6 +57,12 @@ app.get('/api/chirps', (req, res, next) => {
 })
 app.post('/api/chirps', (req, res, next) => {
     Promise.resolve(handlerCreateChirp(req, res)).catch(next);
+})
+app.post('/api/refresh', (req, res, next) => {
+    Promise.resolve(handlerRefresh(req, res)).catch(next);
+})
+app.post('/api/revoke', (req, res, next) => {
+    Promise.resolve(handlerRevoke(req, res)).catch(next);
 })
 app.use(middlewareError);
 

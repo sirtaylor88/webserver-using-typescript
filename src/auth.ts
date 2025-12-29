@@ -2,6 +2,7 @@ import { compare, hash } from "bcrypt";
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { UnauthorizedError } from "./errors.js";
 import { Request } from "express";
+import { randomBytes } from "node:crypto";
 
 type Payload = Pick<jwt.JwtPayload, "iss" | "sub" | "iat" | "exp">;
 const TOKEN_ISSUER = "chirpy";
@@ -51,3 +52,8 @@ export function getBearerToken(req: Request): string {
     }
     return '';
 };
+
+export function makeRefreshToken(): string {
+    const buf = randomBytes(32);
+    return buf.toString('hex');
+}

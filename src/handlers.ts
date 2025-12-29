@@ -3,8 +3,9 @@ import { config } from './config.js';
 import { BadRequestError, ForbiddenError, UnauthorizedError } from './errors.js';
 import { createUser, deleteUsers, getuser } from './db/queries/users.js';
 import { createChirp, getChirp, getChirps } from './db/queries/chirps.js';
-import { checkPasswordHash, getBearerToken, hashPassword, makeJWT, validateJWT } from './auth.js';
+import { checkPasswordHash, getBearerToken, hashPassword, makeJWT, makeRefreshToken, validateJWT } from './auth.js';
 import { UserResponse } from './db/schema.js';
+import { createRefreshToken, getRefreshToken, revokeToken } from './db/queries/refresh_tokens.js';
 
 export async function handlerReadiness(_: Request, res: Response): Promise<void> {
     res.set('Content-Type', 'text/plain; charset=utf-8');
@@ -74,7 +75,6 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
     type requesteBody = {
         email: string;
         password: string;
-        expiresInSeconds?: number;
     };
 
     const params: requesteBody = req.body;
@@ -88,10 +88,17 @@ export async function handlerLogin(req: Request, res: Response): Promise<void> {
         throw new UnauthorizedError('Wrong password!');
     };
     const {hashedPassword, ...userPayload} = user;
-    const expirationTime =  params.expiresInSeconds || 3600;
+    const refreshToken = {
+        token: makeRefreshToken(),
+        userId: user.id,
+        expiredAt: new Date((new Date).getTime() + 60 * 24 * 60 * 60 * 1000),
+        revokedAt: null
+    }
+    createRefreshToken(refreshToken);
     const payload = {
         ...userPayload,
-        token: makeJWT(user.id, expirationTime, config.jwtSecret)
+        token: makeJWT(user.id, 60, config.jwtSecret),
+        refreshToken: refreshToken.token
     }
 
     jsonResponse(res, payload satisfies UserResponse, 200);
@@ -135,4 +142,41 @@ export async function handlerGetChirps(req: Request, res: Response): Promise<voi
 export async function handlerGetChirp(req: Request, res: Response): Promise<void> {
     const chirp = await getChirp(req.params.chirpID);
     jsonResponse(res, chirp, 200);
+}
+
+export async function handlerRefresh(req: Request, res: Response): Promise<void> {
+    const token = req.headers['authorization'];
+    if (!token) {
+        throw new BadRequestError('Missing token!');
+    }
+
+    const JWTToken = await getRefreshToken(token.replace('Bearer ', ''));
+    if (!JWTToken) {
+        throw new UnauthorizedError('Token not found!');
+    }
+    if (JWTToken.revokedAt) {
+        throw new UnauthorizedError('Token is revoked!');
+    }
+    const today = new Date
+    if (today > JWTToken.expiredAt) {
+        throw new UnauthorizedError('Token is expired!');
+    }
+
+    jsonResponse(res, {token: makeJWT(JWTToken.userId, 60, config.jwtSecret)}, 200);
+}
+
+export async function handlerRevoke(req: Request, res: Response): Promise<void> {
+    const token = req.headers['authorization'];
+    if (!token) {
+        throw new BadRequestError('Missing token!');
+    }
+    const JWTToken = await getRefreshToken(token.replace('Bearer ', ''));
+    if (!JWTToken) {
+        throw new UnauthorizedError('Token not found!');
+    }
+    if (JWTToken.revokedAt) {
+        throw new UnauthorizedError('Token is revoked!');
+    }
+    await revokeToken(JWTToken.token);
+    jsonResponse(res, {}, 204);
 }
